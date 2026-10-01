@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CodeCompare.Core/CodeCompare.Core.csproj" />
+    <Project Path="src/CodeCompare/CodeCompare.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CodeCompare.Tests/CodeCompare.Tests.csproj" />
+  </Folder>
+</Solution>

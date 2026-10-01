@@ -1,0 +1,217 @@
+<UserControl x:Class="CodeCompare.Controls.DiffViewer"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:CodeCompare.Controls"
+             xmlns:diff="clr-namespace:CodeCompare.Core.Diff;assembly=CodeCompare.Core">
+    <UserControl.Resources>
+        <Style x:Key="ToolButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Padding" Value="10,3" />
+            <Setter Property="Margin" Value="0,0,4,0" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style x:Key="ToolToggle" TargetType="ToggleButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
+            <Setter Property="Padding" Value="10,3" />
+            <Setter Property="Margin" Value="0,0,4,0" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+
+        <Style x:Key="RowContainer" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Grid>
+                            <ContentPresenter />
+                            <Border x:Name="Highlight" Background="#1F0969DA" BorderBrush="#800969DA" BorderThickness="0,1"
+                                    IsHitTestVisible="False" Visibility="Collapsed" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Highlight" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="RowTemplate" DataType="{x:Type diff:DiffRow}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="{Binding LineNumberWidth, RelativeSource={RelativeSource AncestorType=local:DiffViewer}}" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="1" />
+                    <ColumnDefinition Width="{Binding LineNumberWidth, RelativeSource={RelativeSource AncestorType=local:DiffViewer}}" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border x:Name="LeftNumber" Grid.Column="0" Background="{StaticResource LineNumberBrush}">
+                    <TextBlock Text="{Binding LeftNumber}" Foreground="#8C959F" HorizontalAlignment="Right" Margin="0,0,8,0" />
+                </Border>
+                <Border x:Name="LeftText" Grid.Column="1" Padding="6,0,4,0">
+                    <TextBlock local:InlineText.Segments="{Binding LeftSegments}"
+                               TextWrapping="{Binding WrapMode, RelativeSource={RelativeSource AncestorType=local:DiffViewer}}" />
+                </Border>
+                <Rectangle Grid.Column="2" Fill="{StaticResource BorderLineBrush}" />
+                <Border x:Name="RightNumber" Grid.Column="3" Background="{StaticResource LineNumberBrush}">
+                    <TextBlock Text="{Binding RightNumber}" Foreground="#8C959F" HorizontalAlignment="Right" Margin="0,0,8,0" />
+                </Border>
+                <Border x:Name="RightText" Grid.Column="4" Padding="6,0,4,0">
+                    <TextBlock local:InlineText.IsRightSide="True" local:InlineText.Segments="{Binding RightSegments}"
+                               TextWrapping="{Binding WrapMode, RelativeSource={RelativeSource AncestorType=local:DiffViewer}}" />
+                </Border>
+                <Border x:Name="Collapsed" Grid.ColumnSpan="5" Background="{StaticResource CollapsedBrush}" Visibility="Collapsed" Padding="0,2">
+                    <TextBlock Text="{Binding CollapsedText}" Foreground="{StaticResource AccentTextBrush}" HorizontalAlignment="Center"
+                               FontFamily="Segoe UI" FontSize="12" />
+                </Border>
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding LeftSide}" Value="{x:Static diff:DiffSide.Changed}">
+                    <Setter TargetName="LeftNumber" Property="Background" Value="{StaticResource DeletedNumberBrush}" />
+                    <Setter TargetName="LeftText" Property="Background" Value="{StaticResource DeletedLineBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding LeftSide}" Value="{x:Static diff:DiffSide.Empty}">
+                    <Setter TargetName="LeftNumber" Property="Background" Value="{StaticResource EmptyLineBrush}" />
+                    <Setter TargetName="LeftText" Property="Background" Value="{StaticResource EmptyLineBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding LeftSide}" Value="{x:Static diff:DiffSide.Ignored}">
+                    <Setter TargetName="LeftText" Property="Background" Value="{StaticResource IgnoredLineBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding RightSide}" Value="{x:Static diff:DiffSide.Changed}">
+                    <Setter TargetName="RightNumber" Property="Background" Value="{StaticResource AddedNumberBrush}" />
+                    <Setter TargetName="RightText" Property="Background" Value="{StaticResource AddedLineBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding RightSide}" Value="{x:Static diff:DiffSide.Empty}">
+                    <Setter TargetName="RightNumber" Property="Background" Value="{StaticResource EmptyLineBrush}" />
+                    <Setter TargetName="RightText" Property="Background" Value="{StaticResource EmptyLineBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding RightSide}" Value="{x:Static diff:DiffSide.Ignored}">
+                    <Setter TargetName="RightText" Property="Background" Value="{StaticResource IgnoredLineBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static diff:DiffRowKind.Collapsed}">
+                    <Setter TargetName="Collapsed" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="0" Background="{StaticResource HeaderBrush}" BorderBrush="{StaticResource BorderLineBrush}" BorderThickness="0,0,0,1" Padding="8,5">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="StatsText" VerticalAlignment="Center" Margin="8,0" FontSize="12" />
+                    <Button x:Name="PopOutButton" Style="{StaticResource ToolButton}" Content="Open in window" Click="PopOut_Click"
+                            ToolTip="Open this diff in its own window (double-click a file does the same)" />
+                </StackPanel>
+                <WrapPanel VerticalAlignment="Center">
+                    <Button Style="{StaticResource ToolButton}" Content="▲ Previous" Click="Previous_Click" ToolTip="Previous change (Shift+F7)" />
+                    <Button Style="{StaticResource ToolButton}" Content="▼ Next" Click="Next_Click" ToolTip="Next change (F7)" />
+                    <TextBlock x:Name="ChangeCounter" VerticalAlignment="Center" Margin="6,0,12,0" FontSize="12" Foreground="{StaticResource MutedTextBrush}" MinWidth="90" />
+                    <ToggleButton x:Name="ChangesOnlyToggle" Style="{StaticResource ToolToggle}" Content="Changes only"
+                                  Click="ChangesOnly_Click" ToolTip="Hide unchanged lines, keeping 3 lines of context" />
+                    <ToggleButton x:Name="WrapToggle" Style="{StaticResource ToolToggle}" Content="Wrap lines" IsChecked="True" Click="Wrap_Click" />
+                    <ComboBox x:Name="WhitespaceBox" Margin="8,0,4,0" FontSize="12" MinHeight="28" Padding="8,3" SelectedIndex="0"
+                              SelectionChanged="Option_Changed" ToolTip="How whitespace differences are treated">
+                        <ComboBoxItem Content="Whitespace: exact" />
+                        <ComboBoxItem Content="Ignore leading/trailing" />
+                        <ComboBoxItem Content="Ignore all whitespace" />
+                    </ComboBox>
+                    <CheckBox x:Name="IgnoreCaseBox" Content="Ignore case" Margin="8,0" FontSize="12" VerticalAlignment="Center" Click="Option_Changed" />
+                    <CheckBox x:Name="IgnoreBlankBox" Content="Ignore blank lines" Margin="0,0,8,0" FontSize="12" VerticalAlignment="Center" Click="Option_Changed" />
+                    <Button Style="{StaticResource ToolButton}" Content="A−" Click="FontSmaller_Click" ToolTip="Smaller font (Ctrl+mouse wheel)" />
+                    <Button Style="{StaticResource ToolButton}" Content="A+" Click="FontLarger_Click" ToolTip="Larger font (Ctrl+mouse wheel)" />
+                </WrapPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- File headers -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="1" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="16" />
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0" Padding="10,6" BorderBrush="{StaticResource BorderLineBrush}" BorderThickness="0,0,0,1">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button x:Name="OpenLeftButton" Style="{StaticResource LinkButton}" Content="Open" Margin="8,0,0,0" Click="OpenLeft_Click" />
+                        <Button x:Name="ExploreLeftButton" Style="{StaticResource LinkButton}" Content="Show in folder" Margin="10,0,0,0" Click="ExploreLeft_Click" />
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock x:Name="LeftTitle" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <TextBlock x:Name="LeftInfo" FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+            <Rectangle Grid.Column="1" Fill="{StaticResource BorderLineBrush}" />
+            <Border Grid.Column="2" Grid.ColumnSpan="2" Padding="10,6" BorderBrush="{StaticResource BorderLineBrush}" BorderThickness="0,0,0,1">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button x:Name="OpenRightButton" Style="{StaticResource LinkButton}" Content="Open" Margin="8,0,0,0" Click="OpenRight_Click" />
+                        <Button x:Name="ExploreRightButton" Style="{StaticResource LinkButton}" Content="Show in folder" Margin="10,0,0,0" Click="ExploreRight_Click" />
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock x:Name="RightTitle" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <TextBlock x:Name="RightInfo" FontSize="11" Foreground="{StaticResource MutedTextBrush}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- Rows -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="16" />
+            </Grid.ColumnDefinitions>
+
+            <ListBox x:Name="RowsList"
+                     ItemTemplate="{StaticResource RowTemplate}"
+                     ItemContainerStyle="{StaticResource RowContainer}"
+                     FontFamily="{StaticResource CodeFont}"
+                     FontSize="{Binding CodeFontSize, RelativeSource={RelativeSource AncestorType=local:DiffViewer}}"
+                     BorderThickness="0"
+                     Padding="0"
+                     Background="White"
+                     SelectionMode="Extended"
+                     HorizontalContentAlignment="Stretch"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     ScrollViewer.CanContentScroll="True"
+                     VirtualizingPanel.IsVirtualizing="True"
+                     VirtualizingPanel.VirtualizationMode="Recycling"
+                     VirtualizingPanel.ScrollUnit="Item"
+                     SelectionChanged="RowsList_SelectionChanged"
+                     MouseDoubleClick="RowsList_MouseDoubleClick"
+                     PreviewMouseWheel="RowsList_PreviewMouseWheel">
+                <ListBox.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Copy left lines" Click="CopyLeft_Click" />
+                        <MenuItem Header="Copy right lines" Click="CopyRight_Click" />
+                        <Separator />
+                        <MenuItem Header="Expand all unchanged lines" Click="ExpandAll_Click" />
+                    </ContextMenu>
+                </ListBox.ContextMenu>
+            </ListBox>
+
+            <local:DiffMap x:Name="Map" Grid.Column="1" NavigateRequested="Map_NavigateRequested" />
+
+            <TextBlock x:Name="MessageText" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="{StaticResource MutedTextBrush}" FontSize="14" TextAlignment="Center" TextWrapping="Wrap"
+                       Margin="24" Visibility="Collapsed" />
+        </Grid>
+    </Grid>
+</UserControl>

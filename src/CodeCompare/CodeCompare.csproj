@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>CodeCompare</AssemblyName>
+    <RootNamespace>CodeCompare</RootNamespace>
+    <Product>Code Compare</Product>
+    <Version>1.0.0</Version>
+    <!-- WPF0001: the Fluent ThemeMode API is marked experimental. -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CodeCompare.Core\CodeCompare.Core.csproj" />
+  </ItemGroup>
+
+</Project>
